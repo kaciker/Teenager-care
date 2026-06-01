@@ -48,6 +48,12 @@ def layout(title: str, body: str, user=None):
     <!doctype html>
     <html><head><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{title}</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="icon" href="/icon.svg" type="image/svg+xml">
+    <link rel="apple-touch-icon" href="/icon.svg">
+    <meta name="theme-color" content="#111827">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="Teenager-care">
     <style>
     body{{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:linear-gradient(180deg,#eef2ff,#f5f5f7);margin:0;color:#111827}}
     header{{position:sticky;top:0;z-index:10;background:#ffffffdd;backdrop-filter:blur(10px);padding:12px 14px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}}
@@ -75,5 +81,10 @@ def layout(title: str, body: str, user=None):
       <nav class="topnav">{nav}<a class="logout" href="/logout">Salir</a></nav>
     </header>
     <main>{body}</main>
+    <script>
+    if ('serviceWorker' in navigator) {{
+      navigator.serviceWorker.register('/service-worker.js').catch(() => {{}});
+    }}
+    </script>
     </body></html>
     """

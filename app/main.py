@@ -13,7 +13,7 @@ from routes.incidents import router as incidents_router
 from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
-app = FastAPI(title="Teenager-care", version="0.4.2")
+app = FastAPI(title="Teenager-care", version="0.9.1")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
@@ -182,7 +182,7 @@ def login_page():
     return """
     <!doctype html>
     <html><head><meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>ControlBabies</title>
+    <title>Teenager-care</title>
     <style>
     body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:linear-gradient(180deg,#eef2ff,#f5f5f7);margin:0;padding:24px}
     .card{max-width:420px;margin:8vh auto;background:white;border-radius:28px;padding:24px;box-shadow:0 18px 45px #0002}
@@ -191,7 +191,7 @@ def login_page():
     .hint{font-size:13px;color:#666;line-height:1.4}
     </style></head><body>
     <div class="card">
-      <h1>ControlBabies</h1>
+      <h1>Teenager-care</h1>
       <p>Responsabilidades, puntos, premios y paga semanal.</p>
       <form method="post" action="/login">
         <input name="username" placeholder="Usuario" required>
@@ -424,8 +424,72 @@ def claim_reward(request: Request, reward_id: int):
     return RedirectResponse("/today", status_code=302)
 
 
+
+@app.get("/manifest.json")
+def manifest():
+    return JSONResponse({
+        "name": "Teenager-care",
+        "short_name": "Teenager-care",
+        "description": "Responsabilidades, puntos, premios y colaboración familiar.",
+        "start_url": "/",
+        "scope": "/",
+        "display": "standalone",
+        "background_color": "#eef2ff",
+        "theme_color": "#111827",
+        "icons": [
+            {
+                "src": "/icon.svg",
+                "sizes": "any",
+                "type": "image/svg+xml",
+                "purpose": "any maskable"
+            }
+        ]
+    })
+
+
+@app.get("/service-worker.js")
+def service_worker():
+    js = """
+const CACHE_NAME = "teenager-care-v0.9.1";
+const CORE_ASSETS = ["/", "/login", "/manifest.json", "/icon.svg"];
+
+self.addEventListener("install", event => {
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)));
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", event => {
+  event.waitUntil(
+    caches.keys().then(keys =>
+      Promise.all(keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", event => {
+  if (event.request.method !== "GET") return;
+  event.respondWith(
+    fetch(event.request).catch(() => caches.match(event.request))
+  );
+});
+"""
+    return Response(js, media_type="application/javascript")
+
+
+@app.get("/icon.svg")
+def app_icon():
+    svg = """<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'>
+<rect width='512' height='512' rx='112' fill='#111827'/>
+<circle cx='170' cy='190' r='58' fill='#f59e0b'/>
+<circle cx='342' cy='190' r='58' fill='#60a5fa'/>
+<path d='M118 346c35-62 241-62 276 0' fill='none' stroke='#ffffff' stroke-width='38' stroke-linecap='round'/>
+<path d='M166 305l55 55 126-138' fill='none' stroke='#34d399' stroke-width='34' stroke-linecap='round' stroke-linejoin='round'/>
+</svg>"""
+    return Response(svg, media_type="image/svg+xml")
+
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "ControlBabies", "version": "0.9.0"})
+    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.9.1"})
 
 
