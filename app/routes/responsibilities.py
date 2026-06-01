@@ -172,7 +172,7 @@ def today_responsibilities(request: Request):
     {cards}
     """
 
-    return layout("Responsabilidades de hoy", body)
+    return layout("Responsabilidades de hoy", body, user=user)
 
 
 @router.post("/actions/{action_id}/claim")

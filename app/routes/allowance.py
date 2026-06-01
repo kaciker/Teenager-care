@@ -132,7 +132,7 @@ def allowance_admin(request: Request):
     </div>
     """
 
-    return layout("Puntos, premios y paga", body)
+    return layout("Puntos, premios y paga", body, user=user)
 
 
 @router.post("/allowance/rewards/create")
@@ -303,7 +303,7 @@ def my_rewards(request: Request):
     </div>
     """
 
-    return layout("Mis premios", body)
+    return layout("Mis premios", body, user=user)
 
 
 @router.post("/my/rewards/{reward_item_id}/claim")

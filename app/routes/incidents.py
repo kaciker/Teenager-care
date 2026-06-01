@@ -169,7 +169,7 @@ def incidents_admin(request: Request):
     </div>
     """
 
-    return layout("Incidentes y consecuencias", body)
+    return layout("Incidentes y consecuencias", body, user=user)
 
 
 @router.post("/incidents/create")
@@ -320,4 +320,4 @@ def my_incidents(request: Request):
     {cards or '<div class="card"><p class="muted">No tienes incidentes registrados.</p></div>'}
     """
 
-    return layout("Mis incidentes", body)
+    return layout("Mis incidentes", body, user=user)

@@ -237,56 +237,50 @@ def logout(request: Request):
 def parent_dashboard(request: Request):
     user = require_user(request)
     if user["role"] != "parent":
-        return RedirectResponse("/child", status_code=302)
-
-    with db() as conn:
-        children = conn.execute("SELECT * FROM users WHERE role='child' AND active=1").fetchall()
-        tasks = conn.execute("SELECT id, name AS title FROM actions WHERE active=1").fetchall()
-        events = conn.execute("""
-        SELECT e.*, t.title, u.display_name AS completed_by
-        FROM task_events e
-        JOIN tasks t ON t.id=e.task_id
-        LEFT JOIN users u ON u.id=e.completed_by_user_id
-        ORDER BY e.created_at DESC LIMIT 20
-        """).fetchall()
-        penalties = conn.execute("""
-        SELECT p.*, c.display_name AS child, pa.display_name AS parent, t.title AS task_title
-        FROM penalties p
-        JOIN users c ON c.id=p.child_user_id
-        JOIN users pa ON pa.id=p.parent_user_id
-        LEFT JOIN tasks t ON t.id=p.task_id
-        ORDER BY p.created_at DESC LIMIT 20
-        """).fetchall()
-
-    child_cards = "".join([f"<div class='card'><h3>{c['display_name']}</h3><p>Puntos actuales: <b>{points_for_child(c['id'])}</b></p></div>" for c in children])
-
-    task_options = "".join([f"<option value='{t['id']}'>{t['title']}</option>" for t in tasks])
-    child_options = "".join([f"<option value='{c['id']}'>{c['display_name']}</option>" for c in children])
-
-    event_rows = "".join([
-        f"<div class='card'><b>{e['title']}</b><br><span class='pill'>{e['status']}</span><p class='muted'>Hecha por: {e['completed_by'] or '-'} · {e['created_at']}</p>"
-        f"<form method='post' action='/events/{e['id']}/approve'><button class='ok'>Aprobar</button></form>"
-        f"<form method='post' action='/events/{e['id']}/reject'><button class='danger'>Rechazar</button></form></div>"
-        for e in events
-    ])
-
-    penalty_rows = "".join([
-        f"<div class='card'><b>{p['child']}</b> -{p['points']} puntos <span class='pill'>{p['severity']}</span>"
-        f"<p>{p['reason']}</p><p class='muted'>{p['task_title'] or 'Sin tarea'} · {p['created_at']}</p>"
-        f"{('<img src=' + chr(34) + p['image_path'] + chr(34) + '>') if p['image_path'] else ''}</div>"
-        for p in penalties
-    ])
+        return RedirectResponse("/today", status_code=302)
 
     ensure_daily_actions()
+
+    from core.points import points_balance
+
     with db() as conn:
+        children = conn.execute("""
+        SELECT id, display_name
+        FROM users
+        WHERE role='child' AND active=1
+        ORDER BY display_name
+        """).fetchall()
+
         today_rows = conn.execute("""
-        SELECT da.*, a.name AS action_name, u.display_name AS claimed_by
+        SELECT da.*, a.name AS action_name, a.points, u.display_name AS claimed_by
         FROM daily_actions da
         JOIN actions a ON a.id=da.action_id
         LEFT JOIN users u ON u.id=da.claimed_by_user_id
         WHERE da.event_date=date('now')
         ORDER BY a.name
         """).fetchall()
+
+        incidents = conn.execute("""
+        SELECT i.*, u.display_name AS child_name
+        FROM incidents i
+        JOIN users u ON u.id=i.child_user_id
+        ORDER BY i.id DESC
+        LIMIT 5
+        """).fetchall() if conn.execute("select name from sqlite_master where type='table' and name='incidents'").fetchone() else []
+
+        redemptions = conn.execute("""
+        SELECT rr.*, ri.title, u.display_name AS child_name
+        FROM reward_redemptions rr
+        JOIN reward_items ri ON ri.id=rr.reward_item_id
+        JOIN users u ON u.id=rr.child_user_id
+        ORDER BY rr.id DESC
+        LIMIT 5
+        """).fetchall() if conn.execute("select name from sqlite_master where type='table' and name='reward_redemptions'").fetchone() else []
+
+        child_cards = "".join([
+            f"<div class='card'><h3>{c['display_name']}</h3><div class='score'>{points_balance(c['id'], conn=conn)}</div><p class='muted'>puntos actuales</p></div>"
+            for c in children
+        ])
 
     today_cards = ""
     for x in today_rows:
@@ -295,42 +289,51 @@ def parent_dashboard(request: Request):
             controls = f"<form method='post' action='/actions/{x['action_id']}/validate'><button class='ok'>Validar</button></form><form method='post' action='/actions/{x['action_id']}/reject-daily'><button class='danger'>Rechazar</button></form>"
         today_cards += f"<div class='card critical'><b>{x['action_name']}</b><p>Estado: {x['status']} · Responsable: {x['claimed_by'] or '-'}</p>{controls}</div>"
 
+    incident_cards = "".join([
+        f"<div class='card'><b>{i['child_name']}</b> · <span class='pill'>{i['severity']}</span><p>{i['reason']}</p></div>"
+        for i in incidents
+    ])
+
+    redemption_cards = "".join([
+        f"<div class='card'><b>{r['child_name']}</b> pide <b>{r['title']}</b><p>Estado: {r['status']} · Coste: {r['cost_points']} puntos</p></div>"
+        for r in redemptions
+    ])
+
     body = f"""
-    <div class="card"><h2>Responsabilidades de hoy</h2>{today_cards}</div>
-    <div class="grid">{child_cards}</div>
-
-    <div class="card">
-      <h2>Aplicar penalización</h2>
-      <form method="post" action="/penalties" enctype="multipart/form-data">
-        <select name="child_user_id">{child_options}</select>
-        <select name="task_id"><option value="">Sin tarea concreta</option>{task_options}</select>
-        <select name="severity">
-          <option value="leve">Leve</option>
-          <option value="media">Media</option>
-          <option value="grave">Grave</option>
-        </select>
-        <input name="points" type="number" value="10" min="1">
-        <select name="affects_allowance">
-          <option value="0">No afecta directamente a paga</option>
-          <option value="1">Puede afectar a paga semanal</option>
-        </select>
-        <input name="punishment" placeholder="Castigo opcional">
-        <textarea name="reason" placeholder="Motivo de la penalización" required></textarea>
-        <input name="image" type="file" accept="image/*">
-        <button class="danger">Penalizar</button>
-      </form>
-    </div>
-
-    <div class="card"><h2>Tareas enviadas por hijos</h2>{event_rows or '<p class="muted">Sin eventos todavía.</p>'}</div>
-    <div class="card"><h2>Penalizaciones recientes</h2>{penalty_rows or '<p class="muted">Sin penalizaciones todavía.</p>'}</div>
-    """
-    body = """
     <div class='hero'>
-      <h1>ControlBabies</h1>
-      <p>Responsabilidades familiares: Arlo, Ares, puntos, paga y premios.</p>
+      <h1>Panel familiar</h1>
+      <p>Responsabilidades, incidentes, puntos, premios y paga.</p>
     </div>
-    """ + body
-    return layout("Panel padres", body)
+
+    <div class='grid'>{child_cards}</div>
+
+    <div class='card'>
+      <h2>Responsabilidades de hoy</h2>
+      {today_cards or '<p class="muted">Sin responsabilidades para hoy.</p>'}
+      <a class='btn' href='/today'>Ver detalle diario</a>
+    </div>
+
+    <div class='grid'>
+      <div class='card'>
+        <h2>Incidentes recientes</h2>
+        {incident_cards or '<p class="muted">Sin incidentes.</p>'}
+        <a class='btn' href='/incidents'>Gestionar incidentes</a>
+      </div>
+
+      <div class='card'>
+        <h2>Premios y paga</h2>
+        {redemption_cards or '<p class="muted">Sin solicitudes.</p>'}
+        <a class='btn' href='/allowance'>Gestionar puntos</a>
+      </div>
+    </div>
+
+    <div class='card'>
+      <h2>Administración</h2>
+      <a class='btn' href='/admin/goals'>Objetivos, responsabilidades y acciones</a>
+    </div>
+    """
+
+    return layout("Panel familiar", body, user=user)
 
 
 @app.get("/child", response_class=HTMLResponse)
@@ -338,50 +341,7 @@ def child_dashboard(request: Request):
     user = require_user(request)
     if user["role"] != "child":
         return RedirectResponse("/parent", status_code=302)
-
-    with db() as conn:
-        tasks = conn.execute("SELECT * FROM tasks WHERE active=1").fetchall()
-        rewards = conn.execute("SELECT * FROM rewards WHERE active=1").fetchall()
-        penalties = conn.execute("""
-        SELECT p.*, t.title AS task_title
-        FROM penalties p
-        LEFT JOIN tasks t ON t.id=p.task_id
-        WHERE p.child_user_id=?
-        ORDER BY p.created_at DESC LIMIT 10
-        """, (user["id"],)).fetchall()
-
-    task_cards = "".join([
-        f"<div class='card critical'><h3>{t['title']}</h3><p>{t['description']}</p><span class='pill'>OBLIGATORIA</span> <span class='pill'>{t['schedule_hint']}</span>"
-        f"<p><b>+{t['points']}</b> puntos si se aprueba · <b>-{t['penalty_points']}</b> si no se hace</p>"
-        f"<form method='post' action='/tasks/{t['id']}/done'><textarea name='comment' placeholder='Comentario opcional'></textarea><button class='ok'>Marcar como hecha</button></form></div>"
-        for t in tasks
-    ])
-
-    reward_cards = "".join([
-        f"<div class='card'><b>{r['title']}</b><p>{r['description']}</p><p>Coste: {r['cost_points']} puntos</p>"
-        f"<form method='post' action='/rewards/{r['id']}/claim'><button>Canjear</button></form></div>"
-        for r in rewards
-    ])
-
-    penalty_cards = "".join([
-        f"<div class='card'><b>-{p['points']} puntos</b> <span class='pill'>{p['severity']}</span><p>{p['reason']}</p>"
-        f"<p class='muted'>{p['task_title'] or 'Sin tarea'} · {p['created_at']}</p>"
-        f"{('<img src=' + chr(34) + p['image_path'] + chr(34) + '>') if p['image_path'] else ''}</div>"
-        for p in penalties
-    ])
-
-    body = f"""
-    <div class="hero">
-      <h2>Hola, {user['display_name']}</h2>
-      <div class="score">{points_for_child(user['id'])}</div>
-      <p>puntos actuales</p>
-    </div>
-    <div class="card"><h2>Tareas obligatorias</h2></div>
-    {task_cards}
-    <div class="card"><h2>Premios</h2>{reward_cards}</div>
-    <div class="card"><h2>Mis penalizaciones</h2>{penalty_cards or '<p class="muted">Sin penalizaciones.</p>'}</div>
-    """
-    return layout("Panel hijos", body)
+    return RedirectResponse("/today", status_code=302)
 
 
 @app.post("/tasks/{task_id}/done")
@@ -394,7 +354,7 @@ def mark_done(request: Request, task_id: int, comment: Optional[str] = Form(None
         INSERT INTO task_events(task_id, completed_by_user_id, status, event_date, comment, created_at, updated_at)
         VALUES (?, ?, 'done', ?, ?, ?, ?)
         """, (task_id, user["id"], date.today().isoformat(), comment, now(), now()))
-    return RedirectResponse("/child", status_code=302)
+    return RedirectResponse("/today", status_code=302)
 
 
 @app.post("/events/{event_id}/approve")
@@ -461,11 +421,11 @@ def claim_reward(request: Request, reward_id: int):
         INSERT INTO reward_claims(reward_id, child_user_id, status, created_at)
         VALUES (?, ?, 'requested', ?)
         """, (reward_id, user["id"], now()))
-    return RedirectResponse("/child", status_code=302)
+    return RedirectResponse("/today", status_code=302)
 
 
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "ControlBabies", "version": "0.8.0"})
+    return JSONResponse({"status": "ok", "service": "ControlBabies", "version": "0.9.0"})
 
 

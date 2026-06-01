@@ -21,15 +21,42 @@ def now():
 def password_hash(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
 
-def layout(title: str, body: str):
+def layout(title: str, body: str, user=None):
+    role = user["role"] if user else None
+
+    if role == "parent":
+        nav_links = [
+            ("/parent", "Inicio"),
+            ("/today", "Hoy"),
+            ("/admin/goals", "Objetivos"),
+            ("/incidents", "Incidentes"),
+            ("/allowance", "Puntos"),
+        ]
+    elif role == "child":
+        nav_links = [
+            ("/today", "Hoy"),
+            ("/my/rewards", "Premios"),
+            ("/my/incidents", "Incidentes"),
+        ]
+    else:
+        nav_links = []
+
+    nav = "".join([f'<a class="navlink" href="{href}">{label}</a>' for href, label in nav_links])
+    who = f"<span class='who'>{user['display_name']}</span>" if user else ""
+
     return f"""
     <!doctype html>
     <html><head><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{title}</title>
     <style>
     body{{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:linear-gradient(180deg,#eef2ff,#f5f5f7);margin:0;color:#111827}}
-    header{{position:sticky;top:0;background:#ffffffcc;backdrop-filter:blur(10px);padding:14px 18px;border-bottom:1px solid #eee;display:flex;justify-content:space-between;align-items:center}}
-    main{{padding:16px;max-width:900px;margin:auto}}
+    header{{position:sticky;top:0;z-index:10;background:#ffffffdd;backdrop-filter:blur(10px);padding:12px 14px;border-bottom:1px solid #eee;display:flex;gap:10px;justify-content:space-between;align-items:center;flex-wrap:wrap}}
+    main{{padding:16px;max-width:980px;margin:auto}}
+    .brand{{font-weight:900;letter-spacing:-.02em}}
+    .topnav{{display:flex;gap:8px;align-items:center;flex-wrap:wrap}}
+    .navlink{{background:#eef2ff;color:#111827;text-decoration:none;font-weight:800;padding:8px 10px;border-radius:999px;font-size:13px}}
+    .logout{{background:#111827;color:white;text-decoration:none;font-weight:800;padding:8px 10px;border-radius:999px;font-size:13px}}
+    .who{{color:#6b7280;font-size:13px;font-weight:700}}
     .card{{background:white;border-radius:24px;padding:18px;margin:12px 0;box-shadow:0 12px 30px #00000012}}
     .grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}}
     input,select,textarea,button{{width:100%;box-sizing:border-box;padding:12px;margin:6px 0;border-radius:14px;border:1px solid #ddd;font-size:15px}}
@@ -43,7 +70,10 @@ def layout(title: str, body: str):
     .critical{{border:2px solid #f59e0b;background:#fffbeb}}
     img{{max-width:100%;border-radius:14px}}
     </style></head><body>
-    <header><strong>{title}</strong><a href="/logout">Salir</a></header>
+    <header>
+      <div><span class="brand">Teenager-care</span> {who}</div>
+      <nav class="topnav">{nav}<a class="logout" href="/logout">Salir</a></nav>
+    </header>
     <main>{body}</main>
     </body></html>
     """
