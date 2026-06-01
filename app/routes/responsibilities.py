@@ -5,6 +5,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from core.base import db, now, layout
 from core.auth import require_user
+from core.history import add_history
 
 router = APIRouter()
 
@@ -87,10 +88,7 @@ def claim_action(request: Request, action_id: int):
         SET status='claimed', claimed_by_user_id=?, claimed_at=?
         WHERE action_id=? AND event_date=? AND status='pending'
         """, (user["id"], now(), action_id, today))
-        conn.execute("""
-        INSERT INTO action_history(action_id,event_date,actor_user_id,event_type,notes)
-        VALUES(?,?,?,?,?)
-        """, (action_id, today, user["id"], "claimed", "asumió la acción"))
+        add_history(action_id, user["id"], "claimed", "asumió la acción", event_date=today)
     return RedirectResponse("/today", status_code=302)
 
 
@@ -106,10 +104,7 @@ def complete_action(request: Request, action_id: int):
         SET status='completed', completed_by_user_id=?, completed_at=?
         WHERE action_id=? AND event_date=? AND claimed_by_user_id=? AND status='claimed'
         """, (user["id"], now(), action_id, today, user["id"]))
-        conn.execute("""
-        INSERT INTO action_history(action_id,event_date,actor_user_id,event_type,notes)
-        VALUES(?,?,?,?,?)
-        """, (action_id, today, user["id"], "completed", "marcó la acción como realizada"))
+        add_history(action_id, user["id"], "completed", "marcó la acción como realizada", event_date=today)
     return RedirectResponse("/today", status_code=302)
 
 
@@ -125,10 +120,7 @@ def validate_action(request: Request, action_id: int):
         SET status='validated', validated_by_user_id=?, validated_at=?
         WHERE action_id=? AND event_date=? AND status='completed'
         """, (user["id"], now(), action_id, today))
-        conn.execute("""
-        INSERT INTO action_history(action_id,event_date,actor_user_id,event_type,notes)
-        VALUES(?,?,?,?,?)
-        """, (action_id, today, user["id"], "validated", "validó la acción"))
+        add_history(action_id, user["id"], "validated", "validó la acción", event_date=today)
     return RedirectResponse("/parent", status_code=302)
 
 
@@ -144,8 +136,5 @@ def reject_daily_action(request: Request, action_id: int):
         SET status='rejected', validated_by_user_id=?, validated_at=?
         WHERE action_id=? AND event_date=? AND status='completed'
         """, (user["id"], now(), action_id, today))
-        conn.execute("""
-        INSERT INTO action_history(action_id,event_date,actor_user_id,event_type,notes)
-        VALUES(?,?,?,?,?)
-        """, (action_id, today, user["id"], "rejected", "rechazó la acción"))
+        add_history(action_id, user["id"], "rejected", "rechazó la acción", event_date=today)
     return RedirectResponse("/parent", status_code=302)
