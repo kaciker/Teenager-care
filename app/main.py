@@ -15,7 +15,7 @@ from routes.incidents import router as incidents_router
 from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
-app = FastAPI(title="Teenager-care", version="0.11.1")
+app = FastAPI(title="Teenager-care", version="0.11.2")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
@@ -199,30 +199,30 @@ def login_page():
         radial-gradient(circle at bottom right,#93c5fd88 0,#93c5fd55 28%,transparent 52%),
         linear-gradient(160deg,#fff7ed,#eef2ff);
       color:#111827;
-      padding:22px;
+      padding:20px;
       display:grid;
       place-items:center;
     }
-    .shell{width:100%;max-width:460px}
+    .shell{width:100%;max-width:520px}
     .brand{
       display:flex;align-items:center;gap:12px;
-      font-weight:950;font-size:26px;letter-spacing:-.06em;
+      font-weight:950;font-size:28px;letter-spacing:-.06em;
       margin-bottom:14px;
     }
     .brand-icon{
-      width:46px;height:46px;border-radius:18px;
+      width:48px;height:48px;border-radius:18px;
       background:linear-gradient(135deg,#7c3aed,#06b6d4);
       box-shadow:0 16px 34px #7c3aed55;
     }
     .card{
       background:#ffffffdd;
       border:1px solid #ffffffaa;
-      border-radius:34px;
-      padding:24px;
+      border-radius:36px;
+      padding:26px;
       box-shadow:0 24px 70px #1f293724;
       backdrop-filter:blur(14px);
     }
-    h1{margin:0;font-size:38px;letter-spacing:-.07em}
+    h1{margin:0;font-size:40px;letter-spacing:-.07em}
     .subtitle{color:#6b7280;line-height:1.35;margin:8px 0 18px}
     input,button{
       width:100%;padding:15px;margin:8px 0;
@@ -234,16 +234,27 @@ def login_page():
       box-shadow:0 14px 30px #7c3aed44;
     }
     .family-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
-    .member{text-align:center;font-size:12px;font-weight:850;color:#374151}
+    .pets-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
+    .member,.pet-card{text-align:center;font-size:12px;font-weight:850;color:#374151}
     .photo{
-      width:62px;height:62px;margin:0 auto 6px;border-radius:22px;
+      width:66px;height:66px;margin:0 auto 6px;border-radius:22px;
       display:grid;place-items:center;overflow:hidden;
       background:linear-gradient(135deg,#7c3aed,#06b6d4);
       color:white;font-weight:950;
       box-shadow:0 12px 28px #1f293722;
     }
-    .photo img{width:100%;height:100%;object-fit:cover}
-    .hint{font-size:12px;color:#6b7280;line-height:1.45;margin-top:14px}
+    .pet-photo{
+      width:100%;height:112px;border-radius:26px;
+      display:grid;place-items:center;overflow:hidden;
+      background:
+        radial-gradient(circle at top left,#fbbf24 0,#fbbf2455 34%,transparent 56%),
+        linear-gradient(135deg,#ecfeff,#eef2ff);
+      color:#312e81;font-size:28px;font-weight:950;
+      box-shadow:0 12px 28px #1f293716;
+      margin-bottom:7px;
+    }
+    .photo img,.pet-photo img{width:100%;height:100%;object-fit:cover}
+    .small-note{font-size:12px;color:#6b7280;text-align:center;margin-top:10px}
     </style></head><body>
     <div class="shell">
       <div class="brand"><div class="brand-icon"></div><span>Teenager-care</span></div>
@@ -264,10 +275,12 @@ def login_page():
           <button>Entrar</button>
         </form>
 
-        <p class="hint">
-          Fotos esperadas:<br>
-          /app/uploads/profiles/marcos.png · neli.png · marcos_jr.png · lidia.png
-        </p>
+        <div class="pets-strip">
+          <div class="pet-card"><div class="pet-photo">Arlo<img src="/uploads/profiles/arlo.png" onerror="this.remove()"></div>Arlo</div>
+          <div class="pet-card"><div class="pet-photo">Ares<img src="/uploads/profiles/ares.png" onerror="this.remove()"></div>Ares</div>
+        </div>
+
+        <p class="small-note">Si cambias una foto, refresca o cierra y abre la PWA.</p>
       </div>
     </div>
     </body></html>
@@ -525,7 +538,7 @@ def manifest():
 @app.get("/service-worker.js")
 def service_worker():
     js = """
-const CACHE_NAME = "teenager-care-v0.11.1";
+const CACHE_NAME = "teenager-care-v0.11.2";
 const CORE_ASSETS = ["/", "/login", "/manifest.json", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -633,7 +646,7 @@ def runtime_status():
     return JSONResponse({
         "status": "ok",
         "service": "Teenager-care",
-        "version": "0.11.1",
+        "version": "0.11.2",
         "runtime": {
             "containerized": True,
             "git_available_in_container": False,
@@ -642,7 +655,7 @@ def runtime_status():
         "pwa": {
             "manifest_url": "/manifest.json",
             "service_worker_url": "/service-worker.js",
-            "service_worker_cache": "teenager-care-v0.11.1",
+            "service_worker_cache": "teenager-care-v0.11.2",
             "icons": [
                 "/icon.svg",
                 "/icon-192.png",
@@ -654,6 +667,6 @@ def runtime_status():
 
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.1"})
+    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.2"})
 
 
