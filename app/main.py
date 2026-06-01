@@ -15,7 +15,7 @@ from routes.incidents import router as incidents_router
 from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
-app = FastAPI(title="Teenager-care", version="0.11.5")
+app = FastAPI(title="Teenager-care", version="0.11.6")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
@@ -164,6 +164,15 @@ def points_for_child(child_id: int):
         """, (child_id,)).fetchone()["value"]
 
         return approved - penalties - claims
+
+
+
+@app.exception_handler(HTTPException)
+def http_exception_handler(request: Request, exc: HTTPException):
+    """Send expired/missing browser sessions back to login instead of showing raw 401."""
+    if exc.status_code == 401:
+        return RedirectResponse("/login", status_code=302)
+    raise exc
 
 
 @app.on_event("startup")
@@ -547,7 +556,7 @@ def manifest():
 @app.get("/service-worker.js")
 def service_worker():
     js = """
-const CACHE_NAME = "teenager-care-v0.11.5";
+const CACHE_NAME = "teenager-care-v0.11.6";
 const CORE_ASSETS = ["/", "/manifest.json", "/favicon.ico", "/apple-touch-icon.png", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -655,7 +664,7 @@ def runtime_status():
     return JSONResponse({
         "status": "ok",
         "service": "Teenager-care",
-        "version": "0.11.5",
+        "version": "0.11.6",
         "runtime": {
             "containerized": True,
             "git_available_in_container": False,
@@ -664,7 +673,7 @@ def runtime_status():
         "pwa": {
             "manifest_url": "/manifest.json",
             "service_worker_url": "/service-worker.js",
-            "service_worker_cache": "teenager-care-v0.11.5",
+            "service_worker_cache": "teenager-care-v0.11.6",
             "icons": [
                 "/icon.svg",
                 "/icon-192.png",
@@ -715,6 +724,6 @@ def apple_touch_icon():
 
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.5"})
+    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.6"})
 
 
