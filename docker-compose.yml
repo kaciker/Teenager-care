@@ -1,0 +1,13 @@
+services:
+  controlbabies:
+    build: .
+    container_name: controlbabies
+    restart: unless-stopped
+    ports:
+      - "8097:8097"
+    volumes:
+      - ./data:/data
+      - ./app/uploads:/app/uploads
+    environment:
+      - CONTROLBABIES_DB=/data/controlbabies.sqlite3
+      - CONTROLBABIES_UPLOAD_DIR=/app/uploads
