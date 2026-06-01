@@ -8,14 +8,14 @@ from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from core.base import UPLOAD_DIR, db, now, sessions, password_hash, layout, avatar_html
+from core.base import UPLOAD_DIR, db, now, sessions, password_hash, layout, avatar_html, profile_photo_url
 from core.auth import current_user, require_user
 from routes.responsibilities import router as responsibilities_router, ensure_daily_actions
 from routes.incidents import router as incidents_router
 from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
-app = FastAPI(title="Teenager-care", version="0.11.3")
+app = FastAPI(title="Teenager-care", version="0.11.4")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
@@ -181,7 +181,14 @@ def index(request: Request):
 
 @app.get("/login", response_class=HTMLResponse)
 def login_page():
-    return """
+    marcos_photo = profile_photo_url("marcos.png")
+    neli_photo = profile_photo_url("neli.png")
+    marcos_jr_photo = profile_photo_url("marcos_jr.png")
+    lidia_photo = profile_photo_url("lidia.png")
+    arlo_photo = profile_photo_url("arlo.png")
+    ares_photo = profile_photo_url("ares.png")
+
+    return f"""
     <!doctype html>
     <html><head><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Teenager-care</title>
@@ -189,8 +196,8 @@ def login_page():
     <link rel="apple-touch-icon" href="/icon-192.png">
     <meta name="theme-color" content="#7c3aed">
     <style>
-    *{box-sizing:border-box}
-    body{
+    *{{box-sizing:border-box}}
+    body{{
       font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;
       margin:0;
       min-height:100vh;
@@ -202,48 +209,49 @@ def login_page():
       padding:20px;
       display:grid;
       place-items:center;
-    }
-    .shell{width:100%;max-width:520px}
-    .brand{
+    }}
+    .shell{{width:100%;max-width:520px}}
+    .brand{{
       display:flex;align-items:center;gap:12px;
       font-weight:950;font-size:28px;letter-spacing:-.06em;
       margin-bottom:14px;
-    }
-    .brand-icon{
+    }}
+    .brand-icon{{
       width:48px;height:48px;border-radius:18px;
       background:linear-gradient(135deg,#7c3aed,#06b6d4);
       box-shadow:0 16px 34px #7c3aed55;
-    }
-    .card{
+    }}
+    .card{{
       background:#ffffffdd;
       border:1px solid #ffffffaa;
       border-radius:36px;
       padding:26px;
       box-shadow:0 24px 70px #1f293724;
       backdrop-filter:blur(14px);
-    }
-    h1{margin:0;font-size:40px;letter-spacing:-.07em}
-    .subtitle{color:#6b7280;line-height:1.35;margin:8px 0 18px}
-    input,button{
+    }}
+    h1{{margin:0;font-size:40px;letter-spacing:-.07em}}
+    .subtitle{{color:#6b7280;line-height:1.35;margin:8px 0 18px}}
+    input,button{{
       width:100%;padding:15px;margin:8px 0;
       border-radius:18px;border:1px solid #e5e7eb;font-size:16px;
-    }
-    button{
+    }}
+    button{{
       background:linear-gradient(135deg,#7c3aed,#2563eb);
       color:white;border:0;font-weight:950;
       box-shadow:0 14px 30px #7c3aed44;
-    }
-    .family-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
-    .pets-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}
-    .member,.pet-card{text-align:center;font-size:12px;font-weight:850;color:#374151}
-    .photo{
+    }}
+    .family-strip{{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}}
+    .pets-strip{{display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-top:16px}}
+    .member,.pet-card{{text-align:center;font-size:12px;font-weight:850;color:#374151}}
+    .photo{{
       width:66px;height:66px;margin:0 auto 6px;border-radius:22px;
       display:grid;place-items:center;overflow:hidden;
       background:linear-gradient(135deg,#7c3aed,#06b6d4);
       color:white;font-weight:950;
       box-shadow:0 12px 28px #1f293722;
-    }
-    .pet-photo{
+      position:relative;
+    }}
+    .pet-photo{{
       width:100%;height:112px;border-radius:26px;
       display:grid;place-items:center;overflow:hidden;
       background:
@@ -252,9 +260,10 @@ def login_page():
       color:#312e81;font-size:28px;font-weight:950;
       box-shadow:0 12px 28px #1f293716;
       margin-bottom:7px;
-    }
-    .photo img,.pet-photo img{width:100%;height:100%;object-fit:cover}
-    .small-note{font-size:12px;color:#6b7280;text-align:center;margin-top:10px}
+      position:relative;
+    }}
+    .photo img,.pet-photo img{{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:inherit}}
+    .small-note{{font-size:13px;color:#6b7280;text-align:center;margin-top:12px;font-weight:850}}
     </style></head><body>
     <div class="shell">
       <div class="brand"><div class="brand-icon"></div><span>Teenager-care</span></div>
@@ -263,10 +272,10 @@ def login_page():
         <p class="subtitle">Responsabilidades, puntos, premios, incidentes y colaboración familiar en una app privada.</p>
 
         <div class="family-strip">
-          <div class="member"><div class="photo">M<img src="/uploads/profiles/marcos.png" onerror="this.remove()"></div>Marcos</div>
-          <div class="member"><div class="photo">N<img src="/uploads/profiles/neli.png" onerror="this.remove()"></div>Neli</div>
-          <div class="member"><div class="photo">MJ<img src="/uploads/profiles/marcos_jr.png" onerror="this.remove()"></div>Marcos Jr.</div>
-          <div class="member"><div class="photo">L<img src="/uploads/profiles/lidia.png" onerror="this.remove()"></div>Lidia</div>
+          <div class="member"><div class="photo">M<img src="{marcos_photo}" onerror="this.remove()"></div>Marcos</div>
+          <div class="member"><div class="photo">N<img src="{neli_photo}" onerror="this.remove()"></div>Neli</div>
+          <div class="member"><div class="photo">MJ<img src="{marcos_jr_photo}" onerror="this.remove()"></div>Marcos Jr.</div>
+          <div class="member"><div class="photo">L<img src="{lidia_photo}" onerror="this.remove()"></div>Lidia</div>
         </div>
 
         <form method="post" action="/login">
@@ -276,8 +285,8 @@ def login_page():
         </form>
 
         <div class="pets-strip">
-          <div class="pet-card"><div class="pet-photo">Arlo<img src="/uploads/profiles/arlo.png" onerror="this.remove()"></div>Arlo</div>
-          <div class="pet-card"><div class="pet-photo">Ares<img src="/uploads/profiles/ares.png" onerror="this.remove()"></div>Ares</div>
+          <div class="pet-card"><div class="pet-photo">Arlo<img src="{arlo_photo}" onerror="this.remove()"></div>Arlo</div>
+          <div class="pet-card"><div class="pet-photo">Ares<img src="{ares_photo}" onerror="this.remove()"></div>Ares</div>
         </div>
 
         <p class="small-note">Ellos te lo agradecerán...</p>
@@ -538,8 +547,8 @@ def manifest():
 @app.get("/service-worker.js")
 def service_worker():
     js = """
-const CACHE_NAME = "teenager-care-v0.11.3";
-const CORE_ASSETS = ["/", "/login", "/manifest.json", "/icon.svg", "/icon-192.png", "/icon-512.png"];
+const CACHE_NAME = "teenager-care-v0.11.4";
+const CORE_ASSETS = ["/", "/manifest.json", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)));
@@ -646,7 +655,7 @@ def runtime_status():
     return JSONResponse({
         "status": "ok",
         "service": "Teenager-care",
-        "version": "0.11.3",
+        "version": "0.11.4",
         "runtime": {
             "containerized": True,
             "git_available_in_container": False,
@@ -655,7 +664,7 @@ def runtime_status():
         "pwa": {
             "manifest_url": "/manifest.json",
             "service_worker_url": "/service-worker.js",
-            "service_worker_cache": "teenager-care-v0.11.3",
+            "service_worker_cache": "teenager-care-v0.11.4",
             "icons": [
                 "/icon.svg",
                 "/icon-192.png",
@@ -667,6 +676,6 @@ def runtime_status():
 
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.3"})
+    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.4"})
 
 

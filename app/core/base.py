@@ -40,10 +40,20 @@ def _safe_user_value(user, key, default=""):
         return default
 
 
+def profile_photo_url(filename: str) -> str:
+    """Return a profile photo URL with an mtime cache key."""
+    path = UPLOAD_DIR / "profiles" / filename
+    try:
+        v = int(path.stat().st_mtime)
+    except Exception:
+        v = 0
+    return f"/uploads/profiles/{filename}?v={v}"
+
+
 def user_photo_url(user) -> str:
     username = _safe_user_value(user, "username", "").lower()
     filename = PROFILE_PHOTOS.get(username, f"{username}.png")
-    return f"/uploads/profiles/{filename}"
+    return profile_photo_url(filename)
 
 
 def initials_from_name(name: str) -> str:
