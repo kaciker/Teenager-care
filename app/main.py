@@ -15,7 +15,7 @@ from routes.incidents import router as incidents_router
 from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
-app = FastAPI(title="Teenager-care", version="0.9.3")
+app = FastAPI(title="Teenager-care", version="0.10.0")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
@@ -464,7 +464,7 @@ def manifest():
 @app.get("/service-worker.js")
 def service_worker():
     js = """
-const CACHE_NAME = "teenager-care-v0.9.3";
+const CACHE_NAME = "teenager-care-v0.10.0";
 const CORE_ASSETS = ["/", "/login", "/manifest.json", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -566,8 +566,33 @@ def app_icon_512():
     return Response(_teenager_care_png(512), media_type="image/png")
 
 
+
+@app.get("/api/runtime-status")
+def runtime_status():
+    return JSONResponse({
+        "status": "ok",
+        "service": "Teenager-care",
+        "version": "0.10.0",
+        "runtime": {
+            "containerized": True,
+            "git_available_in_container": False,
+            "database_path": "/data/controlbabies.sqlite3"
+        },
+        "pwa": {
+            "manifest_url": "/manifest.json",
+            "service_worker_url": "/service-worker.js",
+            "service_worker_cache": "teenager-care-v0.10.0",
+            "icons": [
+                "/icon.svg",
+                "/icon-192.png",
+                "/icon-512.png"
+            ]
+        }
+    })
+
+
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.9.3"})
+    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.10.0"})
 
 
