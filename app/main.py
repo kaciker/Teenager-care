@@ -15,7 +15,7 @@ from routes.incidents import router as incidents_router
 from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
-app = FastAPI(title="Teenager-care", version="0.11.0")
+app = FastAPI(title="Teenager-care", version="0.11.1")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
@@ -255,7 +255,7 @@ def login_page():
           <div class="member"><div class="photo">M<img src="/uploads/profiles/marcos.png" onerror="this.remove()"></div>Marcos</div>
           <div class="member"><div class="photo">N<img src="/uploads/profiles/neli.png" onerror="this.remove()"></div>Neli</div>
           <div class="member"><div class="photo">MJ<img src="/uploads/profiles/marcos_jr.png" onerror="this.remove()"></div>Marcos Jr.</div>
-          <div class="member"><div class="photo">L<img src="/uploads/profiles/linia.png" onerror="this.remove()"></div>Lidia</div>
+          <div class="member"><div class="photo">L<img src="/uploads/profiles/lidia.png" onerror="this.remove()"></div>Lidia</div>
         </div>
 
         <form method="post" action="/login">
@@ -266,7 +266,7 @@ def login_page():
 
         <p class="hint">
           Fotos esperadas:<br>
-          /app/uploads/profiles/marcos.png · neli.png · marcos_jr.png · linia.png
+          /app/uploads/profiles/marcos.png · neli.png · marcos_jr.png · lidia.png
         </p>
       </div>
     </div>
@@ -525,7 +525,7 @@ def manifest():
 @app.get("/service-worker.js")
 def service_worker():
     js = """
-const CACHE_NAME = "teenager-care-v0.11.0";
+const CACHE_NAME = "teenager-care-v0.11.1";
 const CORE_ASSETS = ["/", "/login", "/manifest.json", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -633,7 +633,7 @@ def runtime_status():
     return JSONResponse({
         "status": "ok",
         "service": "Teenager-care",
-        "version": "0.11.0",
+        "version": "0.11.1",
         "runtime": {
             "containerized": True,
             "git_available_in_container": False,
@@ -642,7 +642,7 @@ def runtime_status():
         "pwa": {
             "manifest_url": "/manifest.json",
             "service_worker_url": "/service-worker.js",
-            "service_worker_cache": "teenager-care-v0.11.0",
+            "service_worker_cache": "teenager-care-v0.11.1",
             "icons": [
                 "/icon.svg",
                 "/icon-192.png",
@@ -654,6 +654,6 @@ def runtime_status():
 
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.0"})
+    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.1"})
 
 

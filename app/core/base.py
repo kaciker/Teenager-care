@@ -15,7 +15,7 @@ PROFILE_PHOTOS = {
     "marcos": "marcos.png",
     "neli": "neli.png",
     "marcosjr": "marcos_jr.png",
-    "lidia": "linia.png",
+    "lidia": "lidia.png",
 }
 
 
