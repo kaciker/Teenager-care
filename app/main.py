@@ -3,7 +3,7 @@ from datetime import datetime, date
 from typing import Optional
 
 from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
-from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
 from core.base import UPLOAD_DIR, db, now, sessions, password_hash, layout
@@ -13,7 +13,7 @@ from routes.incidents import router as incidents_router
 from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
-app = FastAPI(title="Teenager-care", version="0.9.1")
+app = FastAPI(title="Teenager-care", version="0.9.2")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
@@ -450,7 +450,7 @@ def manifest():
 @app.get("/service-worker.js")
 def service_worker():
     js = """
-const CACHE_NAME = "teenager-care-v0.9.1";
+const CACHE_NAME = "teenager-care-v0.9.2";
 const CORE_ASSETS = ["/", "/login", "/manifest.json", "/icon.svg"];
 
 self.addEventListener("install", event => {
@@ -490,6 +490,6 @@ def app_icon():
 
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.9.1"})
+    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.9.2"})
 
 
