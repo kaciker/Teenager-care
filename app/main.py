@@ -15,7 +15,7 @@ from routes.incidents import router as incidents_router
 from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
-app = FastAPI(title="Teenager-care", version="0.11.4")
+app = FastAPI(title="Teenager-care", version="0.11.5")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
@@ -547,8 +547,8 @@ def manifest():
 @app.get("/service-worker.js")
 def service_worker():
     js = """
-const CACHE_NAME = "teenager-care-v0.11.4";
-const CORE_ASSETS = ["/", "/manifest.json", "/icon.svg", "/icon-192.png", "/icon-512.png"];
+const CACHE_NAME = "teenager-care-v0.11.5";
+const CORE_ASSETS = ["/", "/manifest.json", "/favicon.ico", "/apple-touch-icon.png", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)));
@@ -655,7 +655,7 @@ def runtime_status():
     return JSONResponse({
         "status": "ok",
         "service": "Teenager-care",
-        "version": "0.11.4",
+        "version": "0.11.5",
         "runtime": {
             "containerized": True,
             "git_available_in_container": False,
@@ -664,7 +664,7 @@ def runtime_status():
         "pwa": {
             "manifest_url": "/manifest.json",
             "service_worker_url": "/service-worker.js",
-            "service_worker_cache": "teenager-care-v0.11.4",
+            "service_worker_cache": "teenager-care-v0.11.5",
             "icons": [
                 "/icon.svg",
                 "/icon-192.png",
@@ -674,8 +674,47 @@ def runtime_status():
     })
 
 
+
+def _ico_from_pngs(items):
+    """Build a simple ICO file containing PNG images."""
+    count = len(items)
+    header = b"\x00\x00\x01\x00" + count.to_bytes(2, "little")
+    directory = bytearray()
+    data = bytearray()
+    offset = 6 + 16 * count
+
+    for size, png in items:
+        width = 0 if size >= 256 else size
+        height = 0 if size >= 256 else size
+        directory.extend(bytes([width, height, 0, 0]))
+        directory.extend((1).to_bytes(2, "little"))
+        directory.extend((32).to_bytes(2, "little"))
+        directory.extend(len(png).to_bytes(4, "little"))
+        directory.extend(offset.to_bytes(4, "little"))
+        data.extend(png)
+        offset += len(png)
+
+    return header + bytes(directory) + bytes(data)
+
+
+@app.get("/favicon.ico")
+def favicon_ico():
+    return Response(
+        _ico_from_pngs([
+            (32, _teenager_care_png(32)),
+            (64, _teenager_care_png(64)),
+        ]),
+        media_type="image/x-icon",
+    )
+
+
+@app.get("/apple-touch-icon.png")
+def apple_touch_icon():
+    return Response(_teenager_care_png(180), media_type="image/png")
+
+
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.4"})
+    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.5"})
 
 
