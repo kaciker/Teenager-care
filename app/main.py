@@ -10,12 +10,14 @@ from core.base import UPLOAD_DIR, db, now, sessions, password_hash, layout
 from core.auth import current_user, require_user
 from routes.responsibilities import router as responsibilities_router, ensure_daily_actions
 from routes.incidents import router as incidents_router
+from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
 app = FastAPI(title="Teenager-care", version="0.4.2")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
+app.include_router(allowance_router)
 app.include_router(admin_goals_router)
 
 
@@ -464,6 +466,6 @@ def claim_reward(request: Request, reward_id: int):
 
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "ControlBabies", "version": "0.7.0"})
+    return JSONResponse({"status": "ok", "service": "ControlBabies", "version": "0.8.0"})
 
 

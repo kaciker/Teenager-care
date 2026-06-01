@@ -7,6 +7,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 
 from core.base import db, now, layout, UPLOAD_DIR
 from core.auth import require_user
+from core.points import add_points_entry
 
 router = APIRouter()
 
@@ -244,6 +245,8 @@ async def create_incident(
             now(),
         )).lastrowid
 
+        clean_points = max(0, int(points or 0))
+
         if consequence_text.strip():
             conn.execute("""
             INSERT INTO consequences(
@@ -255,11 +258,22 @@ async def create_incident(
                 incident_id,
                 "manual",
                 consequence_text.strip(),
-                max(0, int(points or 0)),
+                clean_points,
                 1 if affects_allowance else 0,
                 1,
                 now(),
             ))
+
+        if clean_points:
+            add_points_entry(
+                child_user_id,
+                -clean_points,
+                "incident",
+                incident_id,
+                f"Incidente: {reason.strip()}",
+                created_by_user_id=user["id"],
+                conn=conn,
+            )
 
     return RedirectResponse("/incidents", status_code=302)
 

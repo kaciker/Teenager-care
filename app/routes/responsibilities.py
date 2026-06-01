@@ -6,6 +6,7 @@ from fastapi.responses import HTMLResponse, RedirectResponse
 from core.base import db, now, layout
 from core.auth import require_user
 from core.history import add_history
+from core.points import add_points_entry
 
 router = APIRouter()
 
@@ -376,6 +377,13 @@ def validate_action(request: Request, action_id: int):
     today = ensure_daily_actions()
 
     with db() as conn:
+        target = conn.execute("""
+        SELECT da.claimed_by_user_id, a.points, a.name AS action_name
+        FROM daily_actions da
+        JOIN actions a ON a.id=da.action_id
+        WHERE da.action_id=? AND da.event_date=? AND da.status='completed'
+        """, (action_id, today)).fetchone()
+
         cur = conn.execute("""
         UPDATE daily_actions
         SET status='validated', validated_by_user_id=?, validated_at=?
@@ -384,6 +392,17 @@ def validate_action(request: Request, action_id: int):
 
         if cur.rowcount:
             add_history(action_id, user["id"], "validated", "validó la acción", event_date=today, conn=conn)
+
+            if target and target["claimed_by_user_id"]:
+                add_points_entry(
+                    target["claimed_by_user_id"],
+                    int(target["points"] or 0),
+                    "action_validated",
+                    action_id,
+                    f"Acción validada: {target['action_name']}",
+                    created_by_user_id=user["id"],
+                    conn=conn,
+                )
 
     return RedirectResponse("/parent", status_code=302)
 
