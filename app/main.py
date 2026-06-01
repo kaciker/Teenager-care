@@ -8,14 +8,14 @@ from fastapi import FastAPI, Request, Form, UploadFile, File, HTTPException
 from fastapi.responses import HTMLResponse, RedirectResponse, JSONResponse, Response
 from fastapi.staticfiles import StaticFiles
 
-from core.base import UPLOAD_DIR, db, now, sessions, password_hash, layout
+from core.base import UPLOAD_DIR, db, now, sessions, password_hash, layout, avatar_html
 from core.auth import current_user, require_user
 from routes.responsibilities import router as responsibilities_router, ensure_daily_actions
 from routes.incidents import router as incidents_router
 from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
-app = FastAPI(title="Teenager-care", version="0.10.0")
+app = FastAPI(title="Teenager-care", version="0.11.0")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
@@ -185,32 +185,93 @@ def login_page():
     <!doctype html>
     <html><head><meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Teenager-care</title>
+    <link rel="manifest" href="/manifest.json">
+    <link rel="apple-touch-icon" href="/icon-192.png">
+    <meta name="theme-color" content="#7c3aed">
     <style>
-    body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;background:linear-gradient(180deg,#eef2ff,#f5f5f7);margin:0;padding:24px}
-    .card{max-width:420px;margin:8vh auto;background:white;border-radius:28px;padding:24px;box-shadow:0 18px 45px #0002}
-    input,button{width:100%;padding:14px;margin:8px 0;border-radius:14px;border:1px solid #ddd;font-size:16px}
-    button{background:#111827;color:white;border:0;font-weight:700}
-    .hint{font-size:13px;color:#666;line-height:1.4}
+    *{box-sizing:border-box}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;
+      margin:0;
+      min-height:100vh;
+      background:
+        radial-gradient(circle at top left,#fde68a 0,#fde68a66 26%,transparent 45%),
+        radial-gradient(circle at bottom right,#93c5fd88 0,#93c5fd55 28%,transparent 52%),
+        linear-gradient(160deg,#fff7ed,#eef2ff);
+      color:#111827;
+      padding:22px;
+      display:grid;
+      place-items:center;
+    }
+    .shell{width:100%;max-width:460px}
+    .brand{
+      display:flex;align-items:center;gap:12px;
+      font-weight:950;font-size:26px;letter-spacing:-.06em;
+      margin-bottom:14px;
+    }
+    .brand-icon{
+      width:46px;height:46px;border-radius:18px;
+      background:linear-gradient(135deg,#7c3aed,#06b6d4);
+      box-shadow:0 16px 34px #7c3aed55;
+    }
+    .card{
+      background:#ffffffdd;
+      border:1px solid #ffffffaa;
+      border-radius:34px;
+      padding:24px;
+      box-shadow:0 24px 70px #1f293724;
+      backdrop-filter:blur(14px);
+    }
+    h1{margin:0;font-size:38px;letter-spacing:-.07em}
+    .subtitle{color:#6b7280;line-height:1.35;margin:8px 0 18px}
+    input,button{
+      width:100%;padding:15px;margin:8px 0;
+      border-radius:18px;border:1px solid #e5e7eb;font-size:16px;
+    }
+    button{
+      background:linear-gradient(135deg,#7c3aed,#2563eb);
+      color:white;border:0;font-weight:950;
+      box-shadow:0 14px 30px #7c3aed44;
+    }
+    .family-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin:18px 0}
+    .member{text-align:center;font-size:12px;font-weight:850;color:#374151}
+    .photo{
+      width:62px;height:62px;margin:0 auto 6px;border-radius:22px;
+      display:grid;place-items:center;overflow:hidden;
+      background:linear-gradient(135deg,#7c3aed,#06b6d4);
+      color:white;font-weight:950;
+      box-shadow:0 12px 28px #1f293722;
+    }
+    .photo img{width:100%;height:100%;object-fit:cover}
+    .hint{font-size:12px;color:#6b7280;line-height:1.45;margin-top:14px}
     </style></head><body>
-    <div class="card">
-      <h1>Teenager-care</h1>
-      <p>Responsabilidades, puntos, premios y paga semanal.</p>
-      <form method="post" action="/login">
-        <input name="username" placeholder="Usuario" required>
-        <input name="password" placeholder="Contraseña" type="password" required>
-        <button>Entrar</button>
-      </form>
-      <p class="hint">
-        Usuarios iniciales:<br>
-        Marcos: <b>marcos / padre123</b><br>
-        Neli: <b>neli / madre123</b><br>
-        Marcos Jr.: <b>marcosjr / hijo123</b><br>
-        Lidia: <b>lidia / hijo123</b>
-      </p>
+    <div class="shell">
+      <div class="brand"><div class="brand-icon"></div><span>Teenager-care</span></div>
+      <div class="card">
+        <h1>Familia en marcha</h1>
+        <p class="subtitle">Responsabilidades, puntos, premios, incidentes y colaboración familiar en una app privada.</p>
+
+        <div class="family-strip">
+          <div class="member"><div class="photo">M<img src="/uploads/profiles/marcos.png" onerror="this.remove()"></div>Marcos</div>
+          <div class="member"><div class="photo">N<img src="/uploads/profiles/neli.png" onerror="this.remove()"></div>Neli</div>
+          <div class="member"><div class="photo">MJ<img src="/uploads/profiles/marcos_jr.png" onerror="this.remove()"></div>Marcos Jr.</div>
+          <div class="member"><div class="photo">L<img src="/uploads/profiles/linia.png" onerror="this.remove()"></div>Lidia</div>
+        </div>
+
+        <form method="post" action="/login">
+          <input name="username" placeholder="Usuario" required>
+          <input name="password" placeholder="Contraseña" type="password" required>
+          <button>Entrar</button>
+        </form>
+
+        <p class="hint">
+          Fotos esperadas:<br>
+          /app/uploads/profiles/marcos.png · neli.png · marcos_jr.png · linia.png
+        </p>
+      </div>
     </div>
     </body></html>
     """
-
 
 @app.post("/login")
 def login(username: str = Form(...), password: str = Form(...)):
@@ -247,7 +308,7 @@ def parent_dashboard(request: Request):
 
     with db() as conn:
         children = conn.execute("""
-        SELECT id, display_name
+        SELECT id, username, display_name
         FROM users
         WHERE role='child' AND active=1
         ORDER BY display_name
@@ -280,7 +341,7 @@ def parent_dashboard(request: Request):
         """).fetchall() if conn.execute("select name from sqlite_master where type='table' and name='reward_redemptions'").fetchone() else []
 
         child_cards = "".join([
-            f"<div class='card'><h3>{c['display_name']}</h3><div class='score'>{points_balance(c['id'], conn=conn)}</div><p class='muted'>puntos actuales</p></div>"
+            f"<div class='card person-card'>{avatar_html(c, 'lg')}<div><h3>{c['display_name']}</h3><div class='score'>{points_balance(c['id'], conn=conn)}</div><p class='muted'>puntos actuales</p></div></div>"
             for c in children
         ])
 
@@ -464,7 +525,7 @@ def manifest():
 @app.get("/service-worker.js")
 def service_worker():
     js = """
-const CACHE_NAME = "teenager-care-v0.10.0";
+const CACHE_NAME = "teenager-care-v0.11.0";
 const CORE_ASSETS = ["/", "/login", "/manifest.json", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -572,7 +633,7 @@ def runtime_status():
     return JSONResponse({
         "status": "ok",
         "service": "Teenager-care",
-        "version": "0.10.0",
+        "version": "0.11.0",
         "runtime": {
             "containerized": True,
             "git_available_in_container": False,
@@ -581,7 +642,7 @@ def runtime_status():
         "pwa": {
             "manifest_url": "/manifest.json",
             "service_worker_url": "/service-worker.js",
-            "service_worker_cache": "teenager-care-v0.10.0",
+            "service_worker_cache": "teenager-care-v0.11.0",
             "icons": [
                 "/icon.svg",
                 "/icon-192.png",
@@ -593,6 +654,6 @@ def runtime_status():
 
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.10.0"})
+    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.0"})
 
 
