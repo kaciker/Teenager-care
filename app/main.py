@@ -15,7 +15,7 @@ from routes.incidents import router as incidents_router
 from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
-app = FastAPI(title="Teenager-care", version="0.11.2")
+app = FastAPI(title="Teenager-care", version="0.11.3")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
@@ -280,7 +280,7 @@ def login_page():
           <div class="pet-card"><div class="pet-photo">Ares<img src="/uploads/profiles/ares.png" onerror="this.remove()"></div>Ares</div>
         </div>
 
-        <p class="small-note">Si cambias una foto, refresca o cierra y abre la PWA.</p>
+        <p class="small-note">Ellos te lo agradecerán...</p>
       </div>
     </div>
     </body></html>
@@ -538,7 +538,7 @@ def manifest():
 @app.get("/service-worker.js")
 def service_worker():
     js = """
-const CACHE_NAME = "teenager-care-v0.11.2";
+const CACHE_NAME = "teenager-care-v0.11.3";
 const CORE_ASSETS = ["/", "/login", "/manifest.json", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
@@ -646,7 +646,7 @@ def runtime_status():
     return JSONResponse({
         "status": "ok",
         "service": "Teenager-care",
-        "version": "0.11.2",
+        "version": "0.11.3",
         "runtime": {
             "containerized": True,
             "git_available_in_container": False,
@@ -655,7 +655,7 @@ def runtime_status():
         "pwa": {
             "manifest_url": "/manifest.json",
             "service_worker_url": "/service-worker.js",
-            "service_worker_cache": "teenager-care-v0.11.2",
+            "service_worker_cache": "teenager-care-v0.11.3",
             "icons": [
                 "/icon.svg",
                 "/icon-192.png",
@@ -667,6 +667,6 @@ def runtime_status():
 
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.2"})
+    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.11.3"})
 
 
