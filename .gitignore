@@ -3,3 +3,4 @@ app/uploads/
 __pycache__/
 *.pyc
 .env
+app/main_backup_before_v04_*.py
