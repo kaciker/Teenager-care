@@ -1,4 +1,6 @@
 import secrets
+import struct
+import zlib
 from datetime import datetime, date
 from typing import Optional
 
@@ -13,7 +15,7 @@ from routes.incidents import router as incidents_router
 from routes.allowance import router as allowance_router
 from routes.admin_goals import router as admin_goals_router
 
-app = FastAPI(title="Teenager-care", version="0.9.2")
+app = FastAPI(title="Teenager-care", version="0.9.3")
 app.mount("/uploads", StaticFiles(directory=str(UPLOAD_DIR)), name="uploads")
 app.include_router(responsibilities_router)
 app.include_router(incidents_router)
@@ -442,6 +444,18 @@ def manifest():
                 "sizes": "any",
                 "type": "image/svg+xml",
                 "purpose": "any maskable"
+            },
+            {
+                "src": "/icon-192.png",
+                "sizes": "192x192",
+                "type": "image/png",
+                "purpose": "any maskable"
+            },
+            {
+                "src": "/icon-512.png",
+                "sizes": "512x512",
+                "type": "image/png",
+                "purpose": "any maskable"
             }
         ]
     })
@@ -450,8 +464,8 @@ def manifest():
 @app.get("/service-worker.js")
 def service_worker():
     js = """
-const CACHE_NAME = "teenager-care-v0.9.2";
-const CORE_ASSETS = ["/", "/login", "/manifest.json", "/icon.svg"];
+const CACHE_NAME = "teenager-care-v0.9.3";
+const CORE_ASSETS = ["/", "/login", "/manifest.json", "/icon.svg", "/icon-192.png", "/icon-512.png"];
 
 self.addEventListener("install", event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(CORE_ASSETS)));
@@ -488,8 +502,72 @@ def app_icon():
 </svg>"""
     return Response(svg, media_type="image/svg+xml")
 
+
+
+def _png_chunk(tag, data):
+    raw = tag + data
+    return struct.pack(">I", len(data)) + raw + struct.pack(">I", zlib.crc32(raw) & 0xffffffff)
+
+
+def _teenager_care_png(size: int) -> bytes:
+    """Generate a simple valid RGBA PNG without external dependencies."""
+    bg = (17, 24, 39, 255)
+    amber = (245, 158, 11, 255)
+    blue = (96, 165, 250, 255)
+    green = (52, 211, 153, 255)
+    white = (255, 255, 255, 255)
+
+    pixels = []
+    cx1, cy1, r1 = int(size * 0.33), int(size * 0.35), int(size * 0.11)
+    cx2, cy2, r2 = int(size * 0.67), int(size * 0.35), int(size * 0.11)
+
+    for y in range(size):
+        row = bytearray()
+        for x in range(size):
+            color = bg
+
+            if (x - cx1) ** 2 + (y - cy1) ** 2 <= r1 ** 2:
+                color = amber
+            elif (x - cx2) ** 2 + (y - cy2) ** 2 <= r2 ** 2:
+                color = blue
+
+            # Soft smile arc.
+            yy = int(size * 0.67)
+            if abs(y - yy) < max(2, size // 48) and int(size * 0.23) < x < int(size * 0.77):
+                color = white
+
+            # Check mark approximation.
+            if int(size * 0.31) < x < int(size * 0.70):
+                d1 = abs((y - int(size * 0.66)) - (x - int(size * 0.31)) * 0.65)
+                d2 = abs((y - int(size * 0.76)) + (x - int(size * 0.47)) * 0.82)
+                if d1 < max(3, size // 34) or d2 < max(3, size // 34):
+                    if int(size * 0.43) < y < int(size * 0.82):
+                        color = green
+
+            row.extend(color)
+        pixels.append(b"\x00" + bytes(row))
+
+    raw = b"".join(pixels)
+    return (
+        b"\x89PNG\r\n\x1a\n"
+        + _png_chunk(b"IHDR", struct.pack(">IIBBBBB", size, size, 8, 6, 0, 0, 0))
+        + _png_chunk(b"IDAT", zlib.compress(raw, 9))
+        + _png_chunk(b"IEND", b"")
+    )
+
+
+@app.get("/icon-192.png")
+def app_icon_192():
+    return Response(_teenager_care_png(192), media_type="image/png")
+
+
+@app.get("/icon-512.png")
+def app_icon_512():
+    return Response(_teenager_care_png(512), media_type="image/png")
+
+
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.9.2"})
+    return JSONResponse({"status": "ok", "service": "Teenager-care", "version": "0.9.3"})
 
 
