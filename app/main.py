@@ -462,6 +462,6 @@ def claim_reward(request: Request, reward_id: int):
 
 @app.get("/api/health")
 def health():
-    return JSONResponse({"status": "ok", "service": "ControlBabies", "version": "0.5.2"})
+    return JSONResponse({"status": "ok", "service": "ControlBabies", "version": "0.6.0"})
 
 
